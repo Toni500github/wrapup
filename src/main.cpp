@@ -23,10 +23,11 @@
  *
  */
 
+#include <string>
 #include "parse.hpp"
 
 int main (int argc, char *argv[])
 {
-    parse_page("systemctl.md");
+    parse_page(argc < 2 ? "systemctl.md" : std::string(argv[1]) + ".md");
     return 0;
 }

@@ -25,6 +25,7 @@
 
 #include "parse.hpp"
 
+#include <cstddef>
 #include <cstdlib>
 #include <fstream>
 #include <string>
@@ -66,15 +67,47 @@ std::string get_platform()
 
 void parse_page(const std::string_view page)
 {
-    const std::string& path = fmt::format("{}/pages/{}/{}", getCacheDir(), get_platform(), page);
+    std::string path = fmt::format("{}/pages/{}/{}", getCacheDir(), get_platform(), page);
     debug("path = {}", path);
     std::fstream f(path);
-    if (!f)
-        die("failed to open {}", path);
+    if (!f.is_open())
+    {
+        path = fmt::format("{}/pages/common/{}", getCacheDir(), page);
+        f.open(path);
+        if (!f.is_open())
+            die("failed to open {}", path);
+    }
 
     std::string line;
     while (std::getline(f, line))
     {
-        fmt::println("{}", line);
+        if (line.empty())
+            continue;
+
+        switch (line.front())
+        {
+            case '#': line.replace(0, 1, NOCOLOR_BOLD); fmt::print("\n\n"); break;
+            case '>': line.replace(0, 1, "\033[34m"); break;
+            case '-':
+                line.replace(1, 1, "\033[36m ");
+                fmt::print("\n");
+                break;
+            case '`':
+                line.replace(0, 1, "\033[33m");
+                line.replace(line.find('`', 2), 1, NOCOLOR);
+                size_t pos = 0;
+                while ((pos = line.find("{{")) != line.npos)
+                {
+                    line.replace(pos, 2, NOCOLOR);
+                    pos = line.find("}}", pos);
+                    if (pos != line.npos)
+                    line.replace(pos, 2, "\033[33m");
+                }
+                fmt::println("  \t{}\033[0m", line);
+                continue;
+        }
+
+        fmt::println("  {}\033[0m", line);
     }
+    fmt::print("\n\n");
 }

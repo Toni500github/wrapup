@@ -24,8 +24,7 @@ NAME		= wrapup
 TARGET		= $(NAME)
 OLDVERSION	= 0.0.1
 VERSION    	= 0.0.1
-#BRANCH     	= $(shell git rev-parse --abbrev-ref HEAD)
-BRANCH		= main
+BRANCH     	= $(shell git rev-parse --abbrev-ref HEAD)
 SRC 	   	= $(wildcard src/*.cpp)
 OBJ 	   	= $(SRC:.cpp=.o)
 LDFLAGS   	+= -L./$(BUILDDIR)/fmt -lfmt -ldl

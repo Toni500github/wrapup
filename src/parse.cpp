@@ -98,10 +98,10 @@ void parse_page(const std::string_view page)
                 size_t pos = 0;
                 while ((pos = line.find("{{")) != line.npos)
                 {
-                    line.replace(pos, 2, NOCOLOR);
+                    line.replace(pos, 2, "\033[04m");
                     pos = line.find("}}", pos);
                     if (pos != line.npos)
-                    line.replace(pos, 2, "\033[33m");
+                    line.replace(pos, 2, "\033[0m\033[33m");
                 }
                 fmt::println("  \t{}\033[0m", line);
                 continue;

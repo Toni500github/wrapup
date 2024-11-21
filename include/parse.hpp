@@ -23,10 +23,12 @@
  *
  */
 
-#include "parse.hpp"
+#ifndef _PARSE_HPP
+#define _PARSE_HPP
 
-int main (int argc, char *argv[])
-{
-    parse_page("systemctl.md");
-    return 0;
-}
+#include <string>
+
+std::string get_platform();
+void parse_page(const std::string_view page);
+
+#endif // !_PARSE_HPP

@@ -28,7 +28,9 @@
 
 #include <string>
 
+#include "config.hpp"
+
 std::string get_platform();
-void parse_page(const std::string_view page);
+void parse_page(const std::string_view page, const Config& config);
 
 #endif // !_PARSE_HPP

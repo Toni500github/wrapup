@@ -24,10 +24,15 @@
  */
 
 #include <string>
+#include "config.hpp"
 #include "parse.hpp"
+#include "util.hpp"
 
 int main (int argc, char *argv[])
 {
-    parse_page(argc < 2 ? "systemctl.md" : std::string(argv[1]) + ".md");
+    const std::string& configDir = getConfigDir();
+
+    Config config(configDir + "/config.toml", configDir);
+    parse_page(argc < 2 ? "systemctl.md" : std::string(argv[1]) + ".md", config);
     return 0;
 }

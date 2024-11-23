@@ -30,8 +30,9 @@
 #include <fstream>
 #include <string>
 #include <string_view>
+
+#include "config.hpp"
 #include "fmt/base.h"
-#include "fmt/color.h"
 #include "util.hpp"
 
 // this is why I unironically like C/C++ being OS depended
@@ -65,7 +66,7 @@ std::string get_platform()
     return "common";
 }
 
-void parse_page(const std::string_view page)
+void parse_page(const std::string_view page, const Config& config)
 {
     std::string path = fmt::format("{}/pages/{}/{}", getCacheDir(), get_platform(), page);
     debug("path = {}", path);
@@ -86,14 +87,14 @@ void parse_page(const std::string_view page)
 
         switch (line.front())
         {
-            case '#': line.replace(0, 1, NOCOLOR_BOLD); fmt::print("\n\n"); break;
-            case '>': line.replace(0, 1, "\033[34m"); break;
+            case '#': line.replace(0, 1, config.clr_title); fmt::print("\n\n"); break;
+            case '>': line.replace(0, 1, config.clr_description); break;
             case '-':
-                line.replace(1, 1, "\033[36m ");
+                line.replace(1, 1, config.clr_example_text + " ");
                 fmt::print("\n");
                 break;
             case '`':
-                line.replace(0, 1, "\033[33m");
+                line.replace(0, 1, config.clr_example_code);
                 line.replace(line.find('`', 2), 1, NOCOLOR);
                 size_t pos = 0;
                 while ((pos = line.find("{{")) != line.npos)
@@ -101,7 +102,7 @@ void parse_page(const std::string_view page)
                     line.replace(pos, 2, "\033[04m");
                     pos = line.find("}}", pos);
                     if (pos != line.npos)
-                    line.replace(pos, 2, "\033[0m\033[33m");
+                    line.replace(pos, 2, "\033[0m"+config.clr_example_code);
                 }
                 fmt::println("  \t{}\033[0m", line);
                 continue;

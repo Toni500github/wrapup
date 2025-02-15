@@ -5,6 +5,7 @@ APPPREFIX 	?= $(PREFIX)/share/applications
 VARS  	  	?=
 
 DEBUG 		?= 1
+ONLINE		?= 1
 # https://stackoverflow.com/a/1079861
 # WAY easier way to build debug and release builds
 ifeq ($(DEBUG), 1)
@@ -29,9 +30,32 @@ SRC 	   	= $(wildcard src/*.cpp)
 OBJ 	   	= $(SRC:.cpp=.o)
 LDFLAGS   	+= -L./$(BUILDDIR)/fmt -lfmt -ldl
 CXXFLAGS  	?= -mtune=generic -march=native
-CXXFLAGS        += -fvisibility=hidden -Iinclude -std=c++20 $(VARS) -DVERSION=\"$(VERSION)\" -DBRANCH=\"$(BRANCH)\"
+CXXFLAGS        += -fvisibility=hidden -Iinclude -std=c++17 $(VARS) -DVERSION=\"$(VERSION)\" -DBRANCH=\"$(BRANCH)\"
 
-all: fmt toml $(TARGET)
+ifeq ($(ONLINE), 1)
+	# pkg-config --static --libs libcurl (but fixed)
+	CURL_LIBS ?= -lcurl -lnghttp3 -lnghttp2 -lidn2 -lssh2 -lssl -lcrypto -lpsl -lgssapi_krb5 -lzstd -lbrotlidec -lz
+	LDFLAGS   += -L./$(BUILDDIR)/cpr -lcpr $(CURL_LIBS)
+	CXXFLAGS  += -DONLINE=1
+endif
+
+is_cpr_installed = $(shell ldconfig -p | grep libcpr > /dev/null || test -d $(BUILDDIR)/cpr && test $(ONLINE) -eq 1 && echo -n yes)
+
+all: cpr fmt toml $(TARGET)
+
+cpr:
+ifneq ($(is_cpr_installed), yes)
+        #git submodule init
+        #git submodule update --init --recursive
+        #git -C $@ checkout 3b15fa8
+        mkdir -p $(BUILDDIR)/cpr
+        cmake -S $@ -B $@/build -DCMAKE_BUILD_TYPE=Release -DCPR_BUILD_TESTS=OFF -DCPR_USE_SYSTEM_CURL=OFF -DBUILD_SHARED_LIBS=OFF
+        cmake --build $@/build --parallel
+        mv -f $@/build/lib/*.a $(BUILDDIR)/cpr
+        # the absence of this one line didn't matter for a long time, despite it being critical, this caused toni to go mentally insane when trying to make changes to the way the project is being built.
+        mv -f $@/build/cpr_generated_includes/cpr/cprver.h include/cpr/
+        #sudo cmake --install $@/build --prefix /usr
+endif
 
 fmt:
 ifeq ($(wildcard $(BUILDDIR)/fmt/libfmt.a),)
@@ -45,7 +69,7 @@ ifeq ($(wildcard $(BUILDDIR)/toml++/toml.o),)
 	make -C src/toml++ BUILDDIR=$(BUILDDIR)/toml++ CXX=$(CXX)
 endif
 
-$(TARGET): fmt toml $(OBJ)
+$(TARGET): cpr fmt toml $(OBJ)
 	mkdir -p $(BUILDDIR)
 	$(CXX) $(OBJ) $(BUILDDIR)/toml++/toml.o -o $(BUILDDIR)/$(TARGET) $(LDFLAGS)
 

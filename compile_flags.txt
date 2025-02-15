@@ -6,3 +6,4 @@
 -DVERSION="0.0.1"
 -DBRANCH="main"
 -DDEBUG=1
+-DONLINE=1

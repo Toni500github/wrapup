@@ -27,6 +27,7 @@
 
 #include <cstddef>
 #include <cstdlib>
+#include <filesystem>
 #include <fstream>
 #include <string>
 #include <string_view>
@@ -34,6 +35,10 @@
 #include "config.hpp"
 #include "fmt/base.h"
 #include "util.hpp"
+
+#if ONLINE
+# include "cpr/cpr.h"
+#endif
 
 // this is why I unironically like C/C++ being OS depended
 std::string get_platform()
@@ -69,16 +74,35 @@ std::string get_platform()
 void parse_page(const std::string_view page, const Config& config)
 {
     std::string path = fmt::format("{}/pages/{}/{}", getCacheDir(), get_platform(), page);
-    debug("path = {}", path);
     std::fstream f(path);
     if (!f.is_open())
     {
+#if ONLINE
+        path = fmt::format("{}/wrapup_tmp_pages_{}_{}", std::filesystem::temp_directory_path().string(),
+                                      get_platform(), page);
+        std::ofstream out(path);
+        cpr::Session session;
+        session.SetUrl(cpr::Url(fmt::format("https://raw.githubusercontent.com/tldr-pages/tldr/refs/heads/main/pages/{}/{}", get_platform(), page)));
+        const cpr::Response& r = session.Download(out);
+
+        if (r.status_code == 200)
+        {
+            f.open(path);
+            if (!f.is_open())
+                die("failed to open {}", path);
+            goto parse;
+        }
+#endif
+
         path = fmt::format("{}/pages/common/{}", getCacheDir(), page);
         f.open(path);
         if (!f.is_open())
             die("failed to open {}", path);
     }
 
+    debug("path = {}", path);
+
+parse:
     std::string line;
     while (std::getline(f, line))
     {
